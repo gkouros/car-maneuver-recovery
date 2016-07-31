@@ -1,0 +1,7 @@
+<library path="lib/libcar_maneuver_recovery">
+  <class name="car_maneuver_recovery/CarManeuverRecovery" type="car_maneuver_recovery::CarManeuverRecovery" base_class_type="nav_core::RecoveryBehavior">
+    <description>
+      A recovery behavior that performs car like maneuvers to attempt to get unstuck.
+    </description>
+  </class>
+</library>

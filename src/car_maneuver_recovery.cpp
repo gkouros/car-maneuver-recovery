@@ -36,17 +36,25 @@
  *********************************************************************/
 
 #include "car_maneuver_recovery/car_maneuver_recovery.h"
+#include <pluginlib/class_list_macros.h>
+
+// register this class as a recovery behavior plugin
+PLUGINLIB_DECLARE_CLASS(car_maneuver_recovery, CarManeuverRecovery,
+  car_maneuver_recovery::CarManeuverRecovery, nav_core::RecoveryBehavior)
 
 namespace car_maneuver_recovery
 {
 
   CarManeuverRecovery::CarManeuverRecovery()
+  : tfListener_(NULL), globalCostmapROS_(NULL), localCostmapROS_(NULL)
+  , worldModel_(NULL), initialized_(false)
   {
   }
 
 
   CarManeuverRecovery::~CarManeuverRecovery()
   {
+    delete worldModel_;
   }
 
 
@@ -55,11 +63,54 @@ namespace car_maneuver_recovery
     costmap_2d::Costmap2DROS* globalCostmapROS,
     costmap_2d::Costmap2DROS* localCostmapROS)
   {
+    if (initialized_)
+    {
+      ROS_ERROR("Plugin already initialized. Doing nothing.");
+      return;
+    }
+
+    // store arguments
+    name_ = name;
+    tfListener_ = tfListener;
+    globalCostmapROS_ = globalCostmapROS;
+    localCostmapROS_ = localCostmapROS;
+
+    // load parameters
+    ros::NodeHandle pnh_("~/" + name);
+    pnh_.param("max_speed", maxSpeed_, 0.5);
+    pnh_.param("max_steering_angle", maxSteeringAngle_, 0.5);
+    pnh_.param("wheelbase", wheelbase_, 0.5);
+
+    twistPub_ = pnh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+
+    // get world model
+    worldModel_ = new base_local_planner::CostmapModel(
+      *localCostmapROS_->getCostmap());
+
+    // set initialization state
+    initialized_ = true;
   }
 
 
   void CarManeuverRecovery::runBehavior()
   {
+    if (!initialized_)
+    {
+      ROS_ERROR("Plugin must be initialized before recovery behavior is run!");
+      return;
+    }
+
+    if(globalCostmapROS_ == NULL || localCostmapROS_ == NULL){
+      ROS_ERROR("The costmaps passed to the RotateRecovery object cannot be "
+        "NULL. Doing nothing.");
+      return;
+    }
+
+    ROS_WARN("Car Maneuver recovery behavior started.");
+
+    geometry_msgs::Twist cmd;
+    cmd.linear.x = 0.1;
+    twistPub_.publish(cmd);
   }
 
 }  // namespace car_maneuver_recovery

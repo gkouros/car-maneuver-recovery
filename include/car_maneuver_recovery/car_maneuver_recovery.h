@@ -90,16 +90,17 @@ namespace car_maneuver_recovery
       //! contains the initialization state of the plugin
       bool initialized_;
 
+      //! twist publisher
+      ros::Publisher twistPub_;
+
       //! tf transform listener
-      tf::TransformListener tfListener_;
+      tf::TransformListener* tfListener_;
       //! local costmap ros wrapper ptr
       costmap_2d::Costmap2DROS* localCostmapROS_;
       //! global costmap ros wrapper ptr
       costmap_2d::Costmap2DROS* globalCostmapROS_;
-      //! costmap
-      costmap_2d::Costmap2D costmap_;
       //! costmap world model
-      base_local_planner::CostmapModel* world_model_;
+      base_local_planner::CostmapModel* worldModel_;
 
       //! max speed of robot
       double maxSpeed_;
