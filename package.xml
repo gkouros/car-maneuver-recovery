@@ -6,8 +6,9 @@
 
   <maintainer email="gkourosg@yahoo.gr">George Kouros</maintainer>
   <license>BSD</license>
-  <url type="repository">http://github.com/gKouros/car_maneuver_recovery</url>
-  <url type="bugtracker">http://github.com/gKouros/car_maneuver_recovery/issues</url>
+  <url type="repository">http://github.com/gKouros/car-maneuver-recovery</url>
+  <url type="bugtracker">http://github.com/gKouros/car-maneuver-recovery/issues</url>
+  <url type="documentation">http://gKouros.github.io/car-maneuver-recovery</url>
   <author email="gkourosg@yahoo.gr">George Kouros</author>
 
 
