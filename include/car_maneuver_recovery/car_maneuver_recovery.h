@@ -83,6 +83,13 @@ namespace car_maneuver_recovery
        */
       void runBehavior();
 
+      /**
+       * @brief Calculates line cost
+       * @param point1: line start point
+       * @param point2: line end point
+       */
+      double lineCost(geometry_msgs::Point point1, geometry_msgs::Point point2);
+
     private:
 
       //! name of instance
@@ -103,11 +110,18 @@ namespace car_maneuver_recovery
       base_local_planner::CostmapModel* worldModel_;
 
       //! max speed of robot
-      double maxSpeed_;
+      double recoverySpeed_;
       //! max steering angle of robot
-      double maxSteeringAngle_;
+      double recoverySteeringAngle_;
       //! wheelbase of robot
       double wheelbase_;
+      //! four wheel steering status
+      bool fourWheelSteering_;
+      //! use crab steering instead of counter steering or ackermann steering
+      bool crabSteering_;
+      //! recovery behavior timeout
+      double timeout_;
+
 
   };
 

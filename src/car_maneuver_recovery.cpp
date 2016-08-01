@@ -37,6 +37,8 @@
 
 #include "car_maneuver_recovery/car_maneuver_recovery.h"
 #include <pluginlib/class_list_macros.h>
+#include <geometry_msgs/Point.h>
+#include <boost/foreach.hpp>
 
 // register this class as a recovery behavior plugin
 PLUGINLIB_DECLARE_CLASS(car_maneuver_recovery, CarManeuverRecovery,
@@ -76,12 +78,16 @@ namespace car_maneuver_recovery
     localCostmapROS_ = localCostmapROS;
 
     // load parameters
-    ros::NodeHandle pnh_("~/" + name);
-    pnh_.param("max_speed", maxSpeed_, 0.5);
-    pnh_.param("max_steering_angle", maxSteeringAngle_, 0.5);
-    pnh_.param("wheelbase", wheelbase_, 0.5);
+    ros::NodeHandle pnh("~/" + name);
 
-    twistPub_ = pnh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+    pnh.param("recovery_speed", recoverySpeed_, 0.5);
+    pnh.param("recovery_steering_angle", recoverySteeringAngle_, 0.5);
+    pnh.param("wheelbase", wheelbase_, 0.5);
+    pnh.param<bool>("four_wheel_steering", fourWheelSteering_, false);
+    pnh.param<bool>("crab_steering", crabSteering_, false);
+    pnh.param<double>("timeout", timeout_, 5.0);
+
+    twistPub_ = pnh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
 
     // get world model
     worldModel_ = new base_local_planner::CostmapModel(
@@ -100,17 +106,110 @@ namespace car_maneuver_recovery
       return;
     }
 
-    if(globalCostmapROS_ == NULL || localCostmapROS_ == NULL){
-      ROS_ERROR("The costmaps passed to the RotateRecovery object cannot be "
-        "NULL. Doing nothing.");
+    if(globalCostmapROS_ == NULL || localCostmapROS_ == NULL)
+    {
+      ROS_ERROR("The costmaps passed to the CarManeuverRecovery object cannot "
+        "be NULL. Doing nothing.");
       return;
     }
 
     ROS_WARN("Car Maneuver recovery behavior started.");
 
-    geometry_msgs::Twist cmd;
-    cmd.linear.x = 0.1;
-    twistPub_.publish(cmd);
+    ros::Rate loopRate(5);
+    ros::Time time = ros::Time::now();
+
+    while (ros::ok() && (ros::Time::now() - time).toSec() < timeout_)
+    {
+      // get robot footprint
+      std::vector<geometry_msgs::Point> footprint;
+      localCostmapROS_->getOrientedFootprint(footprint);
+
+      double frontLineCost = lineCost(footprint[2], footprint[3]);
+      double rearLineCost = lineCost(footprint[0], footprint[1]);
+      double leftLineCost = lineCost(footprint[1], footprint[2]);
+      double rightLineCost = lineCost(footprint[0], footprint[3]);
+
+      ROS_DEBUG("Front side cost: %f", frontLineCost);
+      ROS_DEBUG("Rear side cost: %f", rearLineCost);
+      ROS_DEBUG("Left side cost: %f", leftLineCost);
+      ROS_DEBUG("Right side cost: %f", rightLineCost);
+
+      int front = frontLineCost < 128;
+      int rear = rearLineCost < 128;
+      int left = leftLineCost < 128;
+      int right = rightLineCost < 128;
+
+      if (front && rear && left && right)  // robot is free
+        break;
+      else if (!front && !rear)  // robot cannot go sideways or turn in place
+      {
+        ROS_FATAL("Unable to recover!");
+        break;
+      }
+
+      geometry_msgs::Twist cmd;
+
+      double speed;
+
+      if (front && rear)
+        speed =  recoverySpeed_ * ((frontLineCost > rearLineCost) ? 1 : -1);
+      else
+        speed = (front - rear) * recoverySpeed_;
+
+      if (fourWheelSteering_)  // 4WS steering
+      {
+        cmd.linear.x = speed;
+
+        if (crabSteering_)  // 4WS crab steering
+          cmd.linear.y = (left - right) * fabs(speed)
+            * tan(recoverySteeringAngle_);
+        else  // 4WS counter steering
+        {
+          double fsa =
+            (speed > 0.0) ? (left - right) * recoverySteeringAngle_ : 0.0;
+          double rsa =
+            (speed < 0.0) ? (right - left) * recoverySteeringAngle_ : 0.0;
+          double beta = atan((tan(fsa) + tan(rsa)) / 2);
+          cmd.linear.x = speed;
+          cmd.linear.y = cmd.linear.x * tan(beta);
+          cmd.angular.z = speed * cos(beta) * (tan(fsa) - tan(rsa))/ wheelbase_;
+        }
+      }
+      else  // ackermann steering
+      {
+        double fsa = (left - right) * recoverySteeringAngle_;
+        double beta = atan(tan(fsa) / 2);
+        cmd.linear.x = speed * sqrt(1 /  (1 + pow(tan(beta), 2)));
+        cmd.linear.y = cmd.linear.x * tan(beta);
+        cmd.angular.z = speed * cos(beta) * tan(fsa) / wheelbase_;
+      }
+
+      // publish cmd
+      twistPub_.publish(cmd);
+
+      loopRate.sleep();
+    }
+
+    if ((ros::Time::now() - time).toSec() < timeout_)
+      ROS_WARN("Car Maneuver recovery behavior timed out!");
+
+    ROS_WARN("Car maneuver recovery behavior finished.");
+  }
+
+
+  double CarManeuverRecovery::lineCost(geometry_msgs::Point point1,
+    geometry_msgs::Point point2)
+  {
+    unsigned int x[2], y[2];
+    localCostmapROS_->getCostmap()->worldToMap(point1.x, point1.y, x[0], y[0]);
+    localCostmapROS_->getCostmap()->worldToMap(point2.x, point2.y, x[1], y[1]);
+
+    double cost = 0.0;
+
+    for (unsigned int i = 0; i < 2; i++)
+      cost += localCostmapROS_->getCostmap()->getCost(x[i], y[i]) / 2;
+
+    return cost;
   }
 
 }  // namespace car_maneuver_recovery
