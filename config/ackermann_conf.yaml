@@ -1,0 +1,17 @@
+move_base:
+  recovery_behavior_enabled: True
+  clear_costmap_recovery_allowed: True
+  clearing_rotation_allowed: False
+
+  recovery_behaviors:
+    - name: car_maneuver_recovery
+    type: car_maneuver_recovery/CarManeuverRecovery
+
+  # car_maneuver_recovery parameters
+  car_maneuver_recovery:
+    four_wheel_steering: False
+    crab_steering: False
+    recovery_speed: 0.1
+    recovery_steering_angle: 0.4
+    wheelbase: 0.32
+    timeout: 10.0
