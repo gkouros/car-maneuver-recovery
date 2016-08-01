@@ -1,0 +1,20 @@
+actions: []
+authors: George Kouros <gkourosg@yahoo.gr>
+brief: ''
+bugtracker: http://github.com/gKouros/car-maneuver-recovery/issues
+depends:
+- catkin
+- roscpp
+- costmap_2d
+- pluginlib
+- nav_core
+- tf
+- base_local_planner
+description: The car_maneuver_recovery package
+license: BSD
+maintainers: George Kouros <gkourosg@yahoo.gr>
+msgs: []
+package_type: package
+repo_url: http://github.com/gKouros/car-maneuver-recovery
+srvs: []
+url: ''
