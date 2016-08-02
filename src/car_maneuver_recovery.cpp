@@ -86,6 +86,7 @@ namespace car_maneuver_recovery
     pnh.param<bool>("four_wheel_steering", fourWheelSteering_, false);
     pnh.param<bool>("crab_steering", crabSteering_, false);
     pnh.param<double>("timeout", timeout_, 5.0);
+    pnh.param<bool>("display_costs", displayCosts_, false);
 
     twistPub_ = pnh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
 
@@ -122,17 +123,29 @@ namespace car_maneuver_recovery
     {
       // get robot footprint
       std::vector<geometry_msgs::Point> footprint;
-      localCostmapROS_->getOrientedFootprint(footprint);
+      footprint = localCostmapROS_->getRobotFootprint();
 
-      double frontLineCost = lineCost(footprint[2], footprint[3]);
-      double rearLineCost = lineCost(footprint[0], footprint[1]);
-      double leftLineCost = lineCost(footprint[1], footprint[2]);
-      double rightLineCost = lineCost(footprint[0], footprint[3]);
+      // pad footprint
+      costmap_2d::padFootprint(footprint, 0.1);
 
-      ROS_DEBUG("Front side cost: %f", frontLineCost);
-      ROS_DEBUG("Rear side cost: %f", rearLineCost);
-      ROS_DEBUG("Left side cost: %f", leftLineCost);
-      ROS_DEBUG("Right side cost: %f", rightLineCost);
+      // transform robot footprint to oriented footprint
+      tf::Stamped<tf::Pose> robotPose;
+      localCostmapROS_->getRobotPose(robotPose);
+      std::vector<geometry_msgs::Point> orientedFootprint;
+      costmap_2d::transformFootprint(robotPose.getOrigin().getX(),
+        robotPose.getOrigin().getY(), tf::getYaw(robotPose.getRotation()),
+        footprint, orientedFootprint);
+      footprint = orientedFootprint;
+
+      double frontLineCost = ceil(lineCost(footprint[2], footprint[3]));
+      double rearLineCost =  ceil(lineCost(footprint[0], footprint[1]));
+      double leftLineCost =  ceil(lineCost(footprint[1], footprint[2]));
+      double rightLineCost = ceil(lineCost(footprint[0], footprint[3]));
+
+      ROS_INFO_STREAM_COND(displayCosts_, "Front side cost: " << frontLineCost);
+      ROS_INFO_STREAM_COND(displayCosts_, "Rear side cost: " << rearLineCost);
+      ROS_INFO_STREAM_COND(displayCosts_, "Left side cost: " << leftLineCost);
+      ROS_INFO_STREAM_COND(displayCosts_, "Right side cost: " << rightLineCost);
 
       int front = frontLineCost < 128;
       int rear = rearLineCost < 128;
@@ -140,7 +153,10 @@ namespace car_maneuver_recovery
       int right = rightLineCost < 128;
 
       if (front && rear && left && right)  // robot is free
+      {
+        ROS_INFO("Robot is not obstructed!");
         break;
+      }
       else if (!front && !rear)  // robot cannot go sideways or turn in place
       {
         ROS_FATAL("Unable to recover!");
@@ -190,7 +206,7 @@ namespace car_maneuver_recovery
       loopRate.sleep();
     }
 
-    if ((ros::Time::now() - time).toSec() < timeout_)
+    if ((ros::Time::now() - time).toSec() > timeout_)
       ROS_WARN("Car Maneuver recovery behavior timed out!");
 
     ROS_WARN("Car maneuver recovery behavior finished.");
@@ -207,7 +223,8 @@ namespace car_maneuver_recovery
     double cost = 0.0;
 
     for (unsigned int i = 0; i < 2; i++)
-      cost += localCostmapROS_->getCostmap()->getCost(x[i], y[i]) / 2;
+      cost += static_cast<unsigned int>(
+        localCostmapROS_->getCostmap()->getCost(x[i], y[i])) / 2.0;
 
     return cost;
   }

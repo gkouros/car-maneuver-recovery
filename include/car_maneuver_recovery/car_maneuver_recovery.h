@@ -121,7 +121,8 @@ namespace car_maneuver_recovery
       bool crabSteering_;
       //! recovery behavior timeout
       double timeout_;
-
+      //! if true plugin prints costmap costs of the sides of the footprint
+      bool displayCosts_;
 
   };
 
