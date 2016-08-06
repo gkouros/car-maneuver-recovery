@@ -16,3 +16,4 @@ move_base:
     recovery_steering_angle: 0.4
     wheelbase: 0.32
     timeout: 10.0
+    display_costs: False
