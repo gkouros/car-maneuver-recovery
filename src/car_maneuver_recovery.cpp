@@ -216,15 +216,18 @@ namespace car_maneuver_recovery
   double CarManeuverRecovery::lineCost(geometry_msgs::Point point1,
     geometry_msgs::Point point2)
   {
-    unsigned int x[2], y[2];
+    unsigned int x[3], y[3];
     localCostmapROS_->getCostmap()->worldToMap(point1.x, point1.y, x[0], y[0]);
-    localCostmapROS_->getCostmap()->worldToMap(point2.x, point2.y, x[1], y[1]);
+    localCostmapROS_->getCostmap()->worldToMap(point2.x, point2.y, x[2], y[2]);
+
+    x[1] = (x[0] + x[2]) / 2;
+    y[1] = (y[0] + y[2]) / 2;
 
     double cost = 0.0;
 
-    for (unsigned int i = 0; i < 2; i++)
+    for (unsigned int i = 0; i < 3; i++)
       cost += static_cast<unsigned int>(
-        localCostmapROS_->getCostmap()->getCost(x[i], y[i])) / 2.0;
+        localCostmapROS_->getCostmap()->getCost(x[i], y[i])) / 3.0;
 
     return cost;
   }
