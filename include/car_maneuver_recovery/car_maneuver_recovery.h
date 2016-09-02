@@ -119,6 +119,8 @@ namespace car_maneuver_recovery
       bool fourWheelSteering_;
       //! use crab steering instead of counter steering or ackermann steering
       bool crabSteering_;
+      //! padding used to get costs around footprint and not on its border
+      double extraFootprintPadding_;
       //! recovery behavior timeout
       double timeout_;
       //! if true plugin prints costmap costs of the sides of the footprint

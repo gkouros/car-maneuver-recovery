@@ -86,6 +86,7 @@ namespace car_maneuver_recovery
     pnh.param<bool>("four_wheel_steering", fourWheelSteering_, false);
     pnh.param<bool>("crab_steering", crabSteering_, false);
     pnh.param<double>("timeout", timeout_, 5.0);
+    pnh.param<double>("extra_footprint_padding", extraFootprintPadding_, 0.01);
     pnh.param<bool>("display_costs", displayCosts_, false);
 
     twistPub_ = pnh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
@@ -126,7 +127,7 @@ namespace car_maneuver_recovery
       footprint = localCostmapROS_->getRobotFootprint();
 
       // pad footprint
-      costmap_2d::padFootprint(footprint, 0.1);
+      costmap_2d::padFootprint(footprint, extraFootprintPadding_);
 
       // transform robot footprint to oriented footprint
       tf::Stamped<tf::Pose> robotPose;
