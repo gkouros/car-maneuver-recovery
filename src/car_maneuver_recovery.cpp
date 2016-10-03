@@ -136,12 +136,23 @@ namespace car_maneuver_recovery
       costmap_2d::transformFootprint(robotPose.getOrigin().getX(),
         robotPose.getOrigin().getY(), tf::getYaw(robotPose.getRotation()),
         footprint, orientedFootprint);
-      footprint = orientedFootprint;
 
-      double frontLineCost = ceil(lineCost(footprint[2], footprint[3]));
-      double rearLineCost =  ceil(lineCost(footprint[0], footprint[1]));
-      double leftLineCost =  ceil(lineCost(footprint[1], footprint[2]));
-      double rightLineCost = ceil(lineCost(footprint[0], footprint[3]));
+      double frontLineCost, rearLineCost, leftLineCost, rightLineCost;
+
+      for (unsigned int i = 0; i < 4; i++)
+      {
+        for (unsigned int j = 0; j < 4; j++)
+        {
+          if (footprint[i].x > 0 && footprint[i].y > 0 && footprint[j].x > 0 && footprint[j].y < 0)
+            frontLineCost = ceil(lineCost(orientedFootprint[i], orientedFootprint[j]));
+          if (footprint[i].x < 0 && footprint[i].y > 0 && footprint[j].x < 0 && footprint[j].y < 0)
+            rearLineCost = ceil(lineCost(orientedFootprint[i], orientedFootprint[j]));
+          if (footprint[i].x > 0 && footprint[i].y > 0 && footprint[j].x < 0 && footprint[j].y > 0)
+            leftLineCost = ceil(lineCost(orientedFootprint[i], orientedFootprint[j]));
+          if (footprint[i].x > 0 && footprint[i].y < 0 && footprint[j].x < 0 && footprint[j].y < 0)
+            rightLineCost = ceil(lineCost(orientedFootprint[i], orientedFootprint[j]));
+        }
+      }
 
       ROS_INFO_STREAM_COND(displayCosts_, "Front side cost: " << frontLineCost);
       ROS_INFO_STREAM_COND(displayCosts_, "Rear side cost: " << rearLineCost);
