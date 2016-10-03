@@ -177,40 +177,27 @@ namespace car_maneuver_recovery
 
       geometry_msgs::Twist cmd;
 
-      double speed;
+      double speed, fsa, rsa;
 
       if (front && rear)
-        speed =  recoverySpeed_ * ((frontLineCost > rearLineCost) ? 1 : -1);
+        speed =  recoverySpeed_ * ((frontLineCost >= rearLineCost) ? 1 : -1);
       else
         speed = (front - rear) * recoverySpeed_;
 
-      if (fourWheelSteering_)  // 4WS steering
-      {
-        cmd.linear.x = speed;
+      fsa = (left - right) * recoverySteeringAngle_;
 
-        if (crabSteering_)  // 4WS crab steering
-          cmd.linear.y = (left - right) * fabs(speed)
-            * tan(recoverySteeringAngle_);
-        else  // 4WS counter steering
-        {
-          double fsa =
-            (speed > 0.0) ? (left - right) * recoverySteeringAngle_ : 0.0;
-          double rsa =
-            (speed < 0.0) ? (right - left) * recoverySteeringAngle_ : 0.0;
-          double beta = atan((tan(fsa) + tan(rsa)) / 2);
-          cmd.linear.x = speed;
-          cmd.linear.y = cmd.linear.x * tan(beta);
-          cmd.angular.z = speed * cos(beta) * (tan(fsa) - tan(rsa))/ wheelbase_;
-        }
-      }
+      if (fourWheelSteering_)  // 4WS steering
+        if (crabSteering_)  // crab steering
+          rsa = fsa;
+        else  // counter steering
+          rsa = -fsa;
       else  // ackermann steering
-      {
-        double fsa = (left - right) * recoverySteeringAngle_;
-        double beta = atan(tan(fsa) / 2);
-        cmd.linear.x = speed * sqrt(1 /  (1 + pow(tan(beta), 2)));
-        cmd.linear.y = cmd.linear.x * tan(beta);
-        cmd.angular.z = speed * cos(beta) * tan(fsa) / wheelbase_;
-      }
+        rsa = 0;
+
+      double beta = atan((tan(fsa) + tan(rsa)) / 2);
+      cmd.linear.x = speed * sqrt(1 / (1+tan(beta)));
+      cmd.linear.y = cmd.linear.x * tan(beta);
+      cmd.angular.z = speed * cos(beta) * (tan(fsa) - tan(rsa))/ wheelbase_;
 
       // publish cmd
       twistPub_.publish(cmd);
