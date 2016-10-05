@@ -85,6 +85,7 @@ namespace car_maneuver_recovery
     pnh.param("wheelbase", wheelbase_, 0.5);
     pnh.param<bool>("four_wheel_steering", fourWheelSteering_, false);
     pnh.param<bool>("crab_steering", crabSteering_, false);
+    pnh.param<int>("escape_cost_threshold", escapeCostThreshold_, 128);
     pnh.param<double>("timeout", timeout_, 5.0);
     pnh.param<double>("extra_footprint_padding", extraFootprintPadding_, 0.01);
     pnh.param<bool>("display_costs", displayCosts_, false);
@@ -159,10 +160,10 @@ namespace car_maneuver_recovery
       ROS_INFO_STREAM_COND(displayCosts_, "Left side cost: " << leftLineCost);
       ROS_INFO_STREAM_COND(displayCosts_, "Right side cost: " << rightLineCost);
 
-      int front = frontLineCost < 128;
-      int rear = rearLineCost < 128;
-      int left = leftLineCost < 128;
-      int right = rightLineCost < 128;
+      int front = frontLineCost < escapeCostThreshold_;
+      int rear = rearLineCost < escapeCostThreshold_;
+      int left = leftLineCost < escapeCostThreshold_;
+      int right = rightLineCost < escapeCostThreshold_;
 
       if (front && rear && left && right)  // robot is free
       {

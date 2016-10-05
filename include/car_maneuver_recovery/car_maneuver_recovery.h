@@ -121,6 +121,8 @@ namespace car_maneuver_recovery
       bool crabSteering_;
       //! padding used to get costs around footprint and not on its border
       double extraFootprintPadding_;
+      //! cost threshold to determine whether robot is trapped or not
+      int escapeCostThreshold_;
       //! recovery behavior timeout
       double timeout_;
       //! if true plugin prints costmap costs of the sides of the footprint

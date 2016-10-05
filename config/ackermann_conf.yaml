@@ -14,5 +14,6 @@ move_base:
     recovery_speed: 0.1
     recovery_steering_angle: 0.4
     wheelbase: 0.32
+    escape_cost_threshold: 128
     timeout: 10.0
     display_costs: False
