@@ -180,8 +180,8 @@ namespace car_maneuver_recovery
 
       double speed, fsa, rsa;
 
-      if (front && rear)
-        speed =  recoverySpeed_ * ((frontLineCost >= rearLineCost) ? 1 : -1);
+      if (front && rear)  // prefer forward motion
+        speed =  recoverySpeed_; // * ((frontLineCost >= rearLineCost) ? 1 : -1);
       else
         speed = (front - rear) * recoverySpeed_;
 
