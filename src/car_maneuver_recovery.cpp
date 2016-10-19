@@ -185,7 +185,7 @@ namespace car_maneuver_recovery
       else
         speed = (front - rear) * recoverySpeed_;
 
-      fsa = (left - right) * recoverySteeringAngle_;
+      fsa = (left - right) * recoverySteeringAngle_ * (speed >= 0 ? 1 : -1);
 
       if (fourWheelSteering_)  // 4WS steering
         if (crabSteering_)  // crab steering
